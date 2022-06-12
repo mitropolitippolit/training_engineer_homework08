@@ -1,0 +1,88 @@
+---
+- name: Stage one. Checks the Docker
+  hosts: all
+  become: true
+  tasks:
+
+    - name: checks the docker package
+      apt: name=docker.io state=present
+      tags:
+        - stage1
+        - pkg
+
+    - name: checks the python3-docker package
+      apt: name=python3-docker state=present
+      tags:
+        - stage1
+        - pkg
+
+    - name: checks the docker service
+      service: name=docker state=started
+      tags:
+        - stage1
+        - svc
+
+- name: Stage two. Checks the builder
+  hosts: pkg
+  become: true
+  vars:
+    build_dir_path: /var/tmp/build
+    dockerfile_dst_path: "{{build_dir_path}}/Dockerfile"
+    dockerhub_img_name: homework08:latest
+  vars_prompt:
+    - name: dockerhub_username
+      private: false
+      prompt: please provide your DockerHub username
+      default: mitropolitippolit
+    - name: dockerhub_password
+      private: true
+      prompt: please provide your DockerHub password
+  tasks:
+
+    - name: checks the build dir
+      file: state=directory dest={{build_dir_path}}
+      tags:
+        - stage2
+        - dir
+
+    - name: checks the Dockerfile
+      copy: src=Dockerfile dest={{dockerfile_dst_path}}
+      tags:
+        - stage2
+        - conf
+
+    - name: login to hub
+      community.docker.docker_login:
+        username: "{{dockerhub_username}}"
+        password: "{{dockerhub_password}}"
+      tags:
+        - stage2
+        - login
+
+    - name: checks the pkg container image
+      community.docker.docker_image:
+        name: "{{dockerhub_username}}/{{dockerhub_img_name}}"
+        build: path="{{build_dir_path}}"
+        source: build
+        state: present
+        push: true
+      tags:
+        - stage2
+        - build
+
+- name: Stage three. Checks the app-runner
+  hosts: app
+  become: true
+  tasks:
+
+    - name: checks the app container
+      community.docker.docker_container:
+        name: app
+        image: mitropolitippolit/homework08:latest
+        command: /opt/tomcat/bin/catalina.sh run
+        ports:
+          - 80:8080
+        state: started
+      tags:
+        - stage3
+        - run
