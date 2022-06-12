@@ -52,7 +52,7 @@
         - conf
 
     - name: login to hub
-      community.docker.docker_login:
+      docker_login:
         username: "{{dockerhub_username}}"
         password: "{{dockerhub_password}}"
       tags:
@@ -60,7 +60,7 @@
         - login
 
     - name: checks the pkg container image
-      community.docker.docker_image:
+      docker_image:
         name: "{{dockerhub_username}}/{{dockerhub_img_name}}"
         build: path="{{build_dir_path}}"
         source: build
@@ -76,7 +76,7 @@
   tasks:
 
     - name: checks the app container
-      community.docker.docker_container:
+      docker_container:
         name: app
         image: mitropolitippolit/homework08:latest
         command: /opt/tomcat/bin/catalina.sh run
