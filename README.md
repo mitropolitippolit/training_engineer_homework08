@@ -13,4 +13,5 @@
 1. Install the Ansible Galaxy
 2. Install community.docker collection
 
+
     $ ansible-galaxy collection install community.docker
